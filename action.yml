@@ -1,0 +1,43 @@
+name: 'CDM'
+description: 'CDM API for creating databases per PR as per SEM'
+author: 'Trilogy'
+inputs:
+  username:
+    required: true
+    description: CDM username
+  password:
+    required: true
+    description: CDM password
+  command:
+    required: true
+    description: CDM command
+  connection:
+    required: true
+    description: Database connection. eg. postgres06 aurora-6
+  product:
+    required: true
+    description: Product name. eg. 'Education Platform'
+  environment:
+    required: true
+    description: Database environment. eg. Dev
+  name:
+    required: true
+    description: Database name.
+  details:
+    required: false
+    description: Description
+    default: GitHub CDM action
+  options:
+    required: false
+    description: options
+  ownermail:
+    required: true
+    description: owner email address.
+    default: action-cdm@example.com
+  ownerskype:
+    required: false
+    description: owner skype.
+    default: live:action-cdm
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
