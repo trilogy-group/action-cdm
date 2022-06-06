@@ -1,5 +1,8 @@
 {
   "root": true,
+  "extends": [
+      "@trilogy-group/eslint-config"
+  ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
       "project": "./tsconfig.json"
@@ -8,30 +11,6 @@
       "@typescript-eslint"
   ],
   "rules": {
-    "no-console": "off",
-    "@typescript-eslint/consistent-type-assertions": [
-      "error",
-      {
-        "assertionStyle": "as",
-        "objectLiteralTypeAssertions": "allow"
-      }
-    ],
-    "@typescript-eslint/ban-types": "error",
-    "@typescript-eslint/explicit-module-boundary-types": "error",
-    "@typescript-eslint/no-explicit-any": "error",
-    "consistent-return": "error",
-    "no-empty-function": "off",
-    "@typescript-eslint/no-empty-function": [
-      "error",
-      {
-        "allow": [
-          "private-constructors"
-        ]
-      }
-    ],
-    "no-func-assign": "error",
-    "no-shadow": "off",
-    "@typescript-eslint/no-shadow": "error",
-    "no-unused-labels": "error"
+    "no-console": "off"
   }
 }

@@ -1,9 +1,9 @@
 import * as core from "@actions/core";
 import axios from "axios";
 import {
-    CDMCommandParameters,
-    CdmResponse,
-    KeyMap
+  CDMCommandParameters,
+  CdmResponse,
+  KeyMap
 } from "./types"
 
 const apiEndpoint = 'http://cdm-cdb.aureacentral.com/api/sendRequest'
