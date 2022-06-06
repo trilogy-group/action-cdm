@@ -11,7 +11,7 @@ import {
   SchemaGetCommand,
   SchemaRemoveCommand,
   SchemaUserGrantFullAccess
-} from "./commands"
+} from './commands'
 
 // CDM commands map
 const commands = new KeyMap<string, CdmCommand>([
@@ -27,8 +27,7 @@ async function run (): Promise<void> {
 
   try {
     command = commands.getCaseInsensitive(commandString)
-  }
-  catch (error) {
+  } catch (error) {
     command = new UnknownCommand(commandString)
   }
   await command.process()
