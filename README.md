@@ -21,32 +21,81 @@ projects can use the same service account without any issues.
 > Since this action directly uses the CDM API, you should refer CDM API reference,
 [here](https://confluence.devfactory.com/pages/viewpage.action?pageId=337251147).
 
-## Parameters
+## Commands
 
-Some of the parameters are in common among all commands.
+Each command has corresponding mandatory or optional parameters, which must be defined as action inputs.
 
-| Parameter Name | Commands to applied                         | Description                                            |
-|----------------|---------------------------------------------|--------------------------------------------------------|
-| `username`     | all                                         | CDM service username                                   |
-| `password`     | all                                         | CDM service password                                   |
-| `command`      | all                                         | CDM command. eg. `schemaNew`, `schemaRemove`           |
-| `connection`   | all                                         | Database connection. eg. `postgres06`, `aurora-6`      |
-| `product`      | all                                         | Product name. eg. `'Education Platform'`               |
-| `environment`  | all                                         | Database environment. eg. `Dev`                        |
-| `name`         | _(only for `schemaNew` and `schemaRemove`)_ | Database name.                                         |
-| `details`      | _(only for `schemaNew`)_                    | Description. default: `GitHub CDM action`              |
-| `options`      | _(only for `schemaNew`)_                    | This is being used on `schemaNew`                      |
-| `ownermail`    | _(only for `schemaNew`)_                    | Owner email address. default: `action-cdm@example.com` |
-| `ownerskype`   | _(only for `schemaNew`)_                    | Owner skype. `live:action-cdm`                         |
-| `force`        | _(only for `schemaRemove`)_                 | Force delete.                                          |
-| `async`        | all                                         | Currently we use `async` as `false` all the times.     |
+You can refer to the [CDM API reference](https://confluence.devfactory.com/pages/viewpage.action?pageId=337251147)
+for the details of the commands.
 
-> ⚠️ Currently `schemaNew`, `schemaRemove` and `schemaGet` commands are supported.
-> Please refer to the CDM API reference for more details, those parameters are only for the supported commands.
+#### Common inputs for all commands
 
-## Contribution
+Those inputs are required for all the commands. The other inputs are defined under the regarding command bellow.
 
-When you update something, be sure to build it.
+| Parameter Name | Description                                  |
+|----------------|----------------------------------------------|
+| `username`     | CDM service username                         |
+| `password`     | CDM service password                         |
+| `command`      | CDM command. eg. `schemaNew`, `schemaRemove` |
+
+> ⚠️ Even though the `command` you want to use is not implemented here, you can still use it.
+> In that case, there won't be any mandatory field check inside this action.
+>
+> However, in any case, you need to provide `username`, `password` and `command` inputs.
+
+### `schemaNew`
+
+| Parameter Name | Mandatory?                                                             | Description                                            |
+|----------------|------------------------------------------------------------------------|--------------------------------------------------------|
+| `connection`   | Y                                                                      | Database connection. eg. `postgres06`, `aurora-6`      |
+| `product`      | Y                                                                      | Product name. eg. `'Education Platform'`               |
+| `environment`  | Y                                                                      | Database environment. eg. `Dev`                        |
+| `name`         | Y                                                                      | Database name.                                         |
+| `details`      | Y                                                                      | Description. default: `GitHub CDM action`              |
+| `options`      | N                                                                      | Those options varies, refer CDM API.                   |
+| `ownermail`    | N _(even though it was set as optional in CDM doc, API mandates that)_ | Owner email address. default: `action-cdm@example.com` |
+| `ownerskype`   | N _(even though it was set as optional in CDM doc, API mandates that)_ | Owner skype. default: `live:action-cdm`                |
+| `async`        | N _(we use this always as `false`)_                                    | Call async or sync                                     |
+
+This command doesn't directly call `schemaNew` command in CDM, rather, first it checks if the schema exists
+using `schemaGet` command. If the schema exists, it will skip the command.
+
+### `schemaRemove`
+
+| Parameter Name | Mandatory?                          | Description                                       |
+|----------------|-------------------------------------|---------------------------------------------------|
+| `connection`   | Y                                   | Database connection. eg. `postgres06`, `aurora-6` |
+| `product`      | Y                                   | Product name. eg. `'Education Platform'`          |
+| `environment`  | Y                                   | Database environment. eg. `Dev`                   |
+| `name`         | Y                                   | Database name.                                    |
+| `force`        | N                                   | Force delete. default: `false`                    |
+| `async`        | N _(we use this always as `false`)_ | Call async or sync                                |
+
+### `schemaGet`
+
+Almost all parameters are optional here. If you provide parameters, those will be used to filter the result.
+
+| Parameter Name | Mandatory?                          | Description                                       |
+|----------------|-------------------------------------|---------------------------------------------------|
+| `connection`   | N                                   | Database connection. eg. `postgres06`, `aurora-6` |
+| `product`      | N                                   | Product name. eg. `'Education Platform'`          |
+| `environment`  | N                                   | Database environment. eg. `Dev`                   |
+| `engine `      | N                                   | Database engine. eg. `mysql`                      |
+| `name`         | N                                   | Database name.                                    |
+| `async`        | N _(we use this always as `false`)_ | Call async or sync                                |
+
+### `schemaUserGrantFullAccess`
+
+| Parameter Name | Mandatory?                          | Description                                        |
+|----------------|-------------------------------------|----------------------------------------------------|
+| `connection`   | Y                                   | Database connection. eg. `postgres06`, `aurora-6`  |
+| `schema`       | Y                                   | Database name, or schema name.                     |
+| `name`         | Y                                   | Database user name.                                |
+| `async`        | N _(we use this always as `false`)_ | Call async or sync                                 |
+
+## Building the action
+
+When you update something, be sure to build it, and commit the generated files.
 
 ```bash
 npm run all
@@ -70,6 +119,7 @@ on:
 # Environment variables can be overridden in .github/env
 env:
   MAIN_PREFIX: main
+  SPRING_DATASOURCE_DATABASE: dedu_readapp
   GITHUB_TOKEN: ${{ secrets.ENG_STD_TOKEN }}
 
 concurrency:
@@ -80,7 +130,22 @@ jobs:
   db-ops:
     name: Manage PR-based databases
     runs-on: ubuntu-latest
+    env:
+      SERVICE_USER: ${{ secrets.VPN_USERNAME }}
+      SERVICE_USER_PASS: ${{ secrets.VPN_PASSWORD }}
+      VPN_AUTH_CODE: ${{ secrets.VPN_AUTH_CODE }}
+      CDM_CONNECTION: aurora-6
+      CDM_PRODUCT: 'Education Plaform'
+      CDM_ENVIRONMENT: Dev
+      CDM_DATABASE_NAME: dedu_readapp_PR${{ github.event.number }}
+      CDM_DATABASE_USER: user
+      CDM_DETAILS: 'Edupf Read-App database for PR-${{ github.event.number }}'
+      CDM_OWNER_MAIL: mehmetemre.atasever@trilogy.com
+      CDM_OWNER_SKYPE: live:m.emre.atasever
     steps:
+      - id: identify_db
+        run: |
+          echo "::set-output name=database_name::${{ env.CDM_DATABASE_NAME }}"
       - name: Connect to the VPN
         uses: trilogy-group/action-kerio-vpn@v1
         with:
@@ -113,6 +178,17 @@ jobs:
           ownermail: mehmetemre.atasever@trilogy.com
           ownerskype: live:m.emre.atasever
 
+      - name: Grant access to user
+        if: github.event.action != 'closed'
+        uses: trilogy-group/action-cdm@test
+        with:
+          username: ${{ env.SERVICE_USER }}
+          password: ${{ env.SERVICE_USER_PASS }}
+          command: schemaUserGrantFullAccess
+          connection: ${{ env.CDM_CONNECTION }}
+          schema: ${{ env.CDM_DATABASE_NAME }}
+          name: ${{ env.CDM_DATABASE_USER }}
+
       - name: Delete PR database
         # Delete the database when PR is closed
         if: github.event.action == 'closed'
@@ -127,13 +203,19 @@ jobs:
           name: dedu_readapp_sem_PR${{ github.event.number }}
           force: true
 
-  deploy-demo:
-    name: Deploy demo environment
-    if: github.repository != 'trilogy-group/eng-template'
+  deploy:
+    name: Do the rest of the deployment
     runs-on: ubuntu-latest
+    if: always() && (needs.db-ops.result == 'success' || github.event_name != 'pull_request')
     needs: db-ops
     steps:
+      - name: Override database name if PR-based environment
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "SPRING_DATASOURCE_DATABASE=${{ needs.db-ops.outputs.database_name }}" >> "$GITHUB_ENV"
       - name: deploy
         run: |
-          echo "the rest of the deployment stuff with PR-${{ github.event.number }}"
+          echo "used db: ${{ env.SPRING_DATASOURCE_DATABASE }}"
+          echo "the rest of the deployment stuff"
+
 ```
