@@ -90,14 +90,18 @@ export enum CDMCommands {
     schemaGet = 'schemaGet',
     schemaNew = 'schemaNew',
     schemaRemove = 'schemaRemove',
+    schemaUserGrantFullAccess = 'schemaUserGrantFullAccess'
 }
 
 export enum CDMCommandParameters {
+    username = 'username',
+    password = 'password',
     command = 'command',
     connection = 'connection',
     product = 'product',
     environment = 'environment',
     engine = "engine",
+    schema = 'schema',
     name = 'name',
     details = 'details',
     options = 'options',

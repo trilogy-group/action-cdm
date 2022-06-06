@@ -1,14 +1,18 @@
 import * as core from "@actions/core";
 import axios from "axios";
-import {CDMCommandParameters, CdmResponse, KeyMap} from "./types";
+import {
+    CDMCommandParameters,
+    CdmResponse,
+    KeyMap
+} from "./types"
 
 const apiEndpoint = 'http://cdm-cdb.aureacentral.com/api/sendRequest'
 
 export abstract class CdmCommand {
     abstract command: string
 
-    mandatoryParameters: CDMCommandParameters[] = []
-    optionalParameters: CDMCommandParameters[] = []
+    mandatoryParameters: string[] = []
+    optionalParameters: string[] = []
 
     abstract process(): Promise<void>
 
@@ -19,7 +23,6 @@ export abstract class CdmCommand {
             const input = core.getInput(parameterName, {required: true})
             params.set(parameterName, input)
         })
-
         this.optionalParameters.forEach(parameterName => {
             const input = core.getInput(parameterName, {required: false})
 
@@ -34,8 +37,8 @@ export abstract class CdmCommand {
     }
 
     async getCdmResult(params: KeyMap<string, string> = this.getCommandParams()): Promise<CdmResponse> {
-        const username = core.getInput('username', { required: true })
-        const password = core.getInput('password', { required: true })
+        const username = core.getInput(CDMCommandParameters.username, { required: true })
+        const password = core.getInput(CDMCommandParameters.password, { required: true })
         const auth = Buffer.from(`${username}:${password}`).toString('base64')
 
         params.set(CDMCommandParameters.command, this.command)

@@ -1,21 +1,36 @@
 import * as core from '@actions/core'
-import {KeyMap, CDMCommands, CDMCommandParameters} from './types'
-import {CdmCommand} from "./cdmCommand";
-import {SchemaNewCommand} from "./schemaNewCommand";
-import {SchemaGetCommand} from "./schemaGetCommand";
-import {SchemaRemoveCommand} from "./schemaRemoveCommand";
+import {
+  KeyMap,
+  CDMCommands,
+  CDMCommandParameters
+} from './commands/types'
+import {
+  CdmCommand,
+  UnknownCommand,
+  SchemaNewCommand,
+  SchemaGetCommand,
+  SchemaRemoveCommand,
+  SchemaUserGrantFullAccess
+} from "./commands"
 
 // CDM commands map
 const commands = new KeyMap<string, CdmCommand>([
   [CDMCommands.schemaGet, new SchemaGetCommand()],
   [CDMCommands.schemaNew, new SchemaNewCommand()],
-  [CDMCommands.schemaRemove, new SchemaRemoveCommand()]
+  [CDMCommands.schemaRemove, new SchemaRemoveCommand()],
+  [CDMCommands.schemaUserGrantFullAccess, new SchemaUserGrantFullAccess()]
 ])
 
 async function run (): Promise<void> {
   const commandString = core.getInput(CDMCommandParameters.command, { required: true })
+  let command: CdmCommand | undefined
 
-  const command = commands.getCaseInsensitive(commandString)
+  try {
+    command = commands.getCaseInsensitive(commandString)
+  }
+  catch (error) {
+    command = new UnknownCommand(commandString)
+  }
   await command.process()
 }
 

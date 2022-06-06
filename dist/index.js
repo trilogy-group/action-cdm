@@ -7863,7 +7863,7 @@ __nccwpck_require__.r(__webpack_exports__);
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
-;// CONCATENATED MODULE: ./lib/types.js
+;// CONCATENATED MODULE: ./lib/commands/types.js
 class KeyMap extends Map {
     constructor(iterable) {
         super();
@@ -7917,14 +7917,18 @@ var CDMCommands;
     CDMCommands["schemaGet"] = "schemaGet";
     CDMCommands["schemaNew"] = "schemaNew";
     CDMCommands["schemaRemove"] = "schemaRemove";
+    CDMCommands["schemaUserGrantFullAccess"] = "schemaUserGrantFullAccess";
 })(CDMCommands || (CDMCommands = {}));
 var CDMCommandParameters;
 (function (CDMCommandParameters) {
+    CDMCommandParameters["username"] = "username";
+    CDMCommandParameters["password"] = "password";
     CDMCommandParameters["command"] = "command";
     CDMCommandParameters["connection"] = "connection";
     CDMCommandParameters["product"] = "product";
     CDMCommandParameters["environment"] = "environment";
     CDMCommandParameters["engine"] = "engine";
+    CDMCommandParameters["schema"] = "schema";
     CDMCommandParameters["name"] = "name";
     CDMCommandParameters["details"] = "details";
     CDMCommandParameters["options"] = "options";
@@ -7937,7 +7941,7 @@ var CDMCommandParameters;
 // EXTERNAL MODULE: ./node_modules/axios/index.js
 var axios = __nccwpck_require__(6545);
 var axios_default = /*#__PURE__*/__nccwpck_require__.n(axios);
-;// CONCATENATED MODULE: ./lib/cdmCommand.js
+;// CONCATENATED MODULE: ./lib/commands/cdmCommand.js
 
 
 
@@ -7963,8 +7967,8 @@ class CdmCommand {
         return params;
     }
     async getCdmResult(params = this.getCommandParams()) {
-        const username = core.getInput('username', { required: true });
-        const password = core.getInput('password', { required: true });
+        const username = core.getInput(CDMCommandParameters.username, { required: true });
+        const password = core.getInput(CDMCommandParameters.password, { required: true });
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
         params.set(CDMCommandParameters.command, this.command);
         // force sync for now
@@ -7988,7 +7992,45 @@ class CdmCommand {
     }
 }
 
-;// CONCATENATED MODULE: ./lib/schemaGetCommand.js
+;// CONCATENATED MODULE: ./lib/commands/unknownCommand.js
+
+
+
+class UnknownCommand extends CdmCommand {
+    constructor(commandName) {
+        super();
+        this.command = commandName;
+        // await this.getCdmResult()
+        const env = process.env;
+        const ignoredInputs = [
+            CDMCommandParameters.username,
+            CDMCommandParameters.password,
+            CDMCommandParameters.command
+        ];
+        // since this command takes inputs dynamically, do not use core.getInput
+        // function from github actions/core
+        for (const [k, v] of Object.entries(env)) {
+            if (!k.toUpperCase().startsWith('INPUT_')) {
+                continue;
+            }
+            if (v === undefined || v === '') {
+                continue;
+            }
+            const key = k.replace('INPUT_', '').toLowerCase();
+            if (ignoredInputs.includes(key)) {
+                continue;
+            }
+            console.log('=> ' + key + '="' + v + '"');
+            this.optionalParameters.push(key);
+        }
+    }
+    async process() {
+        core.info(`Processing unknown ${this.command} command`);
+        await this.getCdmResult();
+    }
+}
+
+;// CONCATENATED MODULE: ./lib/commands/schemaGetCommand.js
 
 
 class SchemaGetCommand extends CdmCommand {
@@ -8009,7 +8051,7 @@ class SchemaGetCommand extends CdmCommand {
     }
 }
 
-;// CONCATENATED MODULE: ./lib/schemaNewCommand.js
+;// CONCATENATED MODULE: ./lib/commands/schemaNewCommand.js
 
 
 
@@ -8078,7 +8120,7 @@ class SchemaNewCommand extends CdmCommand {
     }
 }
 
-;// CONCATENATED MODULE: ./lib/schemaRemoveCommand.js
+;// CONCATENATED MODULE: ./lib/commands/schemaRemoveCommand.js
 
 
 class SchemaRemoveCommand extends CdmCommand {
@@ -8102,9 +8144,38 @@ class SchemaRemoveCommand extends CdmCommand {
     }
 }
 
+;// CONCATENATED MODULE: ./lib/commands/schemaUserGrantFullAccess.js
+
+
+class SchemaUserGrantFullAccess extends CdmCommand {
+    constructor() {
+        super();
+        this.command = CDMCommands.schemaUserGrantFullAccess;
+        this.command = CDMCommands.schemaUserGrantFullAccess;
+        this.mandatoryParameters = [
+            CDMCommandParameters.connection,
+            CDMCommandParameters.schema,
+            CDMCommandParameters.name
+        ];
+        this.optionalParameters = [
+        //   CDMCommandParameters.async, // we'll always use sync for now
+        ];
+    }
+    async process() {
+        await this.getCdmResult();
+    }
+}
+
+;// CONCATENATED MODULE: ./lib/commands/index.js
+
+
+
+
+
+
+
+
 ;// CONCATENATED MODULE: ./lib/main.js
-
-
 
 
 
@@ -8112,11 +8183,18 @@ class SchemaRemoveCommand extends CdmCommand {
 const commands = new KeyMap([
     [CDMCommands.schemaGet, new SchemaGetCommand()],
     [CDMCommands.schemaNew, new SchemaNewCommand()],
-    [CDMCommands.schemaRemove, new SchemaRemoveCommand()]
+    [CDMCommands.schemaRemove, new SchemaRemoveCommand()],
+    [CDMCommands.schemaUserGrantFullAccess, new SchemaUserGrantFullAccess()]
 ]);
 async function run() {
     const commandString = core.getInput(CDMCommandParameters.command, { required: true });
-    const command = commands.getCaseInsensitive(commandString);
+    let command;
+    try {
+        command = commands.getCaseInsensitive(commandString);
+    }
+    catch (error) {
+        command = new UnknownCommand(commandString);
+    }
     await command.process();
 }
 run()
